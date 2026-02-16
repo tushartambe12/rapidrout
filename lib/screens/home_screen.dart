@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/user_state.dart';
 import '../images/app_images.dart';
 import '../constants/colors.dart';
 import '../constants/text_styles.dart';
@@ -6,6 +7,7 @@ import '../models/category.dart';
 import '../models/product.dart';
 import '../models/cart_state.dart';
 import '../models/booking_state.dart';
+import '../models/theme_state.dart';
 import '../widgets/banner_slider.dart';
 import '../widgets/category_card.dart';
 import '../widgets/product_card.dart';
@@ -14,6 +16,7 @@ import 'services_screen.dart';
 import 'cart_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
+import 'placeholder_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,15 +31,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen to cart changes
+    // Listen to cart and theme changes
     cartState.addListener(_onStateChanged);
     bookingState.addListener(_onStateChanged);
+    themeState.addListener(_onStateChanged);
   }
 
   @override
   void dispose() {
     cartState.removeListener(_onStateChanged);
     bookingState.removeListener(_onStateChanged);
+    themeState.removeListener(_onStateChanged);
     super.dispose();
   }
 
@@ -46,18 +51,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: [
-          _buildHomeContent(),
-          const ServicesScreen(),
-          const CartScreen(),
-          const ProfileScreen(),
-        ],
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          setState(() {
+            _selectedIndex = 0;
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildHomeContent(),
+            const ServicesScreen(),
+            const CartScreen(),
+            const ProfileScreen(),
+          ],
+        ),
+        bottomNavigationBar: _buildBottomNavBar(),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
@@ -185,6 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : AppColors.textPrimary;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -194,6 +213,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'Hi, ${userState.userName.split(' ').first} 👋',
+                  style: AppTextStyles.heading4.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(
@@ -202,58 +228,166 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 20,
                     ),
                     const SizedBox(width: 4),
-                    Text('Delivering to', style: AppTextStyles.bodySmall),
+                    Text('Delivering to', style: AppTextStyles.bodySmall.copyWith(color: isDark ? Colors.white60 : null)),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text('Mumbai, India', style: AppTextStyles.heading4),
+                    Text('Mumbai, India', style: AppTextStyles.heading4.copyWith(color: textColor)),
                     const SizedBox(width: 4),
-                    const Icon(
+                    Icon(
                       Icons.keyboard_arrow_down,
-                      color: AppColors.textPrimary,
+                      color: textColor,
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          // Notification Icon
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: Stack(
-              children: [
-                const Center(
+          // Dark Mode Toggle Button
+          GestureDetector(
+            onTap: () => themeState.toggle(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return RotationTransition(
+                      turns: animation,
+                      child: ScaleTransition(scale: animation, child: child),
+                    );
+                  },
                   child: Icon(
-                    Icons.notifications_outlined,
-                    color: AppColors.textPrimary,
+                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                    key: ValueKey(isDark),
+                    color: isDark ? Colors.amber : AppColors.textPrimary,
+                    size: 22,
                   ),
                 ),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
-                      shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Cart Icon with Badge
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedIndex = 2;
+              });
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.shopping_cart_outlined,
+                      color: textColor,
                     ),
                   ),
+                  if (cartState.itemCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          cartState.itemCount > 9 ? '9+' : cartState.itemCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Notification Icon (Clickable)
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PlaceholderScreen(
+                    title: 'Notifications',
+                    icon: Icons.notifications_outlined,
+                  ),
                 ),
-              ],
+              );
+            },
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: textColor,
+                    ),
+                  ),
+                  Positioned(
+                    right: 10,
+                    top: 10,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: AppColors.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -262,6 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -273,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
@@ -305,12 +440,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSectionTitle(String title, {VoidCallback? onSeeAll}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: AppTextStyles.heading3),
+          Text(title, style: AppTextStyles.heading3.copyWith(color: isDark ? Colors.white : null)),
           if (onSeeAll != null)
             GestureDetector(
               onTap: onSeeAll,
@@ -481,9 +617,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBottomNavBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -538,7 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -546,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected ? AppColors.primary : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : AppColors.textSecondary),
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
@@ -584,7 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -597,7 +734,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   isSelected ? activeIcon : icon,
                   color: isSelected
                       ? AppColors.primary
-                      : AppColors.textSecondary,
+                      : (Theme.of(context).brightness == Brightness.dark ? Colors.white60 : AppColors.textSecondary),
                 ),
                 if (badgeCount > 0)
                   Positioned(

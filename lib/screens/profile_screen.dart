@@ -1,20 +1,64 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/text_styles.dart';
+import '../models/user_state.dart';
+import '../models/cart_state.dart';
+import '../models/theme_state.dart';
+import 'login_screen.dart';
+import 'placeholder_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    userState.addListener(_onStateChanged);
+    cartState.addListener(_onStateChanged);
+    themeState.addListener(_onStateChanged);
+  }
+
+  @override
+  void dispose() {
+    userState.removeListener(_onStateChanged);
+    cartState.removeListener(_onStateChanged);
+    themeState.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  void _onStateChanged() {
+    setState(() {});
+  }
+
+  void _navigateTo(String title, IconData icon) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlaceholderScreen(title: title, icon: icon),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = isDark ? Colors.white : AppColors.textPrimary;
+    final subtextColor = isDark ? Colors.white60 : AppColors.textSecondary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           // Profile Header
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: const BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 borderRadius: BorderRadius.vertical(
@@ -24,18 +68,18 @@ class ProfileScreen extends StatelessWidget {
               child: SafeArea(
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     // Profile Avatar
                     Container(
-                      width: 100,
-                      height: 100,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 4),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 20,
                           ),
                         ],
@@ -44,30 +88,37 @@ class ProfileScreen extends StatelessWidget {
                         child: Text('👤', style: TextStyle(fontSize: 50)),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
-                      'Prachi Mulgaonkar',
+                      userState.userName.isNotEmpty
+                          ? userState.userName
+                          : 'Guest User',
                       style: AppTextStyles.heading2.copyWith(
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '+91 98765 43210',
+                      userState.phoneNumber.isNotEmpty
+                          ? userState.phoneNumber
+                          : 'No phone number',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: Colors.white70,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    // Stats Row
+                    const SizedBox(height: 14),
+                    // Dynamic Stats Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _buildStatItem('12', 'Orders'),
+                        _buildStatItem('${cartState.itemCount}', 'In Cart'),
                         Container(width: 1, height: 30, color: Colors.white30),
-                        _buildStatItem('5', 'Bookings'),
+                        _buildStatItem('${cartState.items.length}', 'Items'),
                         Container(width: 1, height: 30, color: Colors.white30),
-                        _buildStatItem('₹2.5K', 'Saved'),
+                        _buildStatItem(
+                          '₹${cartState.total.toStringAsFixed(0)}',
+                          'Total',
+                        ),
                       ],
                     ),
                   ],
@@ -81,66 +132,76 @@ class ProfileScreen extends StatelessWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildMenuSection('My Account', [
-                  _MenuItemData(Icons.person_outline, 'Edit Profile', () {}),
+                  _MenuItemData(
+                    Icons.person_outline,
+                    'Edit Profile',
+                    () => _navigateTo('Edit Profile', Icons.person_outline),
+                  ),
                   _MenuItemData(
                     Icons.location_on_outlined,
                     'My Addresses',
-                    () {},
+                    () => _navigateTo('My Addresses', Icons.location_on_outlined),
                   ),
                   _MenuItemData(
                     Icons.payment_outlined,
                     'Payment Methods',
-                    () {},
+                    () => _navigateTo('Payment Methods', Icons.payment_outlined),
                   ),
-                ]),
+                ], cardColor, textColor, subtextColor),
                 const SizedBox(height: 20),
                 _buildMenuSection('My Activity', [
                   _MenuItemData(
                     Icons.shopping_bag_outlined,
                     'My Orders',
-                    () {},
-                    badge: '3',
+                    () => _navigateTo('My Orders', Icons.shopping_bag_outlined),
                   ),
                   _MenuItemData(
                     Icons.calendar_today_outlined,
                     'My Bookings',
-                    () {},
-                    badge: '2',
+                    () => _navigateTo('My Bookings', Icons.calendar_today_outlined),
                   ),
-                  _MenuItemData(Icons.favorite_outline, 'Wishlist', () {}),
-                ]),
+                  _MenuItemData(
+                    Icons.favorite_outline,
+                    'Wishlist',
+                    () => _navigateTo('Wishlist', Icons.favorite_outline),
+                  ),
+                ], cardColor, textColor, subtextColor),
                 const SizedBox(height: 20),
-                _buildMenuSection('Settings', [
-                  _MenuItemData(
-                    Icons.notifications_outlined,
-                    'Notifications',
-                    () {},
-                  ),
-                  _MenuItemData(
-                    Icons.language,
-                    'Language',
-                    () {},
-                    trailing: 'English',
-                  ),
-                  _MenuItemData(
-                    Icons.dark_mode_outlined,
-                    'Dark Mode',
-                    () {},
-                    isSwitch: true,
-                  ),
-                ]),
+                // Settings section with dark mode toggle built-in
+                _buildSettingsSection(cardColor, textColor, subtextColor),
                 const SizedBox(height: 20),
                 _buildMenuSection('Support', [
-                  _MenuItemData(Icons.help_outline, 'Help & FAQ', () {}),
-                  _MenuItemData(Icons.chat_outlined, 'Contact Us', () {}),
-                  _MenuItemData(Icons.info_outline, 'About Us', () {}),
-                ]),
+                  _MenuItemData(
+                    Icons.help_outline,
+                    'Help & FAQ',
+                    () => _navigateTo('Help & FAQ', Icons.help_outline),
+                  ),
+                  _MenuItemData(
+                    Icons.chat_outlined,
+                    'Contact Us',
+                    () => _navigateTo('Contact Us', Icons.chat_outlined),
+                  ),
+                  _MenuItemData(
+                    Icons.info_outline,
+                    'About Us',
+                    () => _navigateTo('About Us', Icons.info_outline),
+                  ),
+                ], cardColor, textColor, subtextColor),
                 const SizedBox(height: 20),
                 // Logout Button
-                Container(
+                SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      userState.logout();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
                     icon: const Icon(Icons.logout, color: AppColors.error),
                     label: Text(
                       'Logout',
@@ -161,7 +222,7 @@ class ProfileScreen extends StatelessWidget {
                 // App Version
                 Center(
                   child: Text(
-                    'QuickServe v1.0.0',
+                    'RapidRoute v1.0.0',
                     style: AppTextStyles.caption,
                   ),
                 ),
@@ -189,10 +250,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuSection(String title, List<_MenuItemData> items) {
+  /// Settings section with a real Dark Mode switch
+  Widget _buildSettingsSection(Color cardColor, Color textColor, Color subtextColor) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -200,70 +262,114 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(title, style: AppTextStyles.bodySmall),
+            child: Text('Settings', style: AppTextStyles.bodySmall.copyWith(color: subtextColor)),
           ),
-          ...items.map((item) => _buildMenuItem(item)).toList(),
+          // Notifications
+          _buildMenuItem(
+            _MenuItemData(
+              Icons.notifications_outlined,
+              'Notifications',
+              () => _navigateTo('Notifications', Icons.notifications_outlined),
+            ),
+            textColor,
+          ),
+          // Language
+          _buildMenuItem(
+            _MenuItemData(
+              Icons.language,
+              'Language',
+              () => _navigateTo('Language', Icons.language),
+              trailing: 'English',
+            ),
+            textColor,
+          ),
+          // Dark Mode — with a real working switch
+          ListTile(
+            onTap: () => themeState.toggle(),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                themeState.isDarkMode ? Icons.dark_mode : Icons.dark_mode_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            title: Text(
+              'Dark Mode',
+              style: AppTextStyles.bodyLarge.copyWith(color: textColor),
+            ),
+            trailing: Switch(
+              value: themeState.isDarkMode,
+              onChanged: (value) => themeState.setDarkMode(value),
+              activeColor: AppColors.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(_MenuItemData item) {
+  Widget _buildMenuSection(
+    String title,
+    List<_MenuItemData> items,
+    Color cardColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(title, style: AppTextStyles.bodySmall.copyWith(color: subtextColor)),
+          ),
+          ...items.map((item) => _buildMenuItem(item, textColor)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(_MenuItemData item, Color textColor) {
     return ListTile(
       onTap: item.onTap,
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(item.icon, color: AppColors.primary, size: 20),
       ),
-      title: Text(item.title, style: AppTextStyles.bodyLarge),
-      trailing: item.isSwitch
-          ? Switch(
-              value: false,
-              onChanged: (value) {},
-              activeColor: AppColors.primary,
-            )
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (item.badge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      item.badge!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                if (item.trailing != null)
-                  Text(
-                    item.trailing!,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: AppColors.textLight,
-                ),
-              ],
+      title: Text(item.title, style: AppTextStyles.bodyLarge.copyWith(color: textColor)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (item.trailing != null)
+            Text(
+              item.trailing!,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: textColor.withValues(alpha: 0.3),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -272,16 +378,12 @@ class _MenuItemData {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final String? badge;
   final String? trailing;
-  final bool isSwitch;
 
   _MenuItemData(
     this.icon,
     this.title,
     this.onTap, {
-    this.badge,
     this.trailing,
-    this.isSwitch = false,
   });
 }

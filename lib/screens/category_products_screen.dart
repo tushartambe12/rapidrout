@@ -16,17 +16,24 @@ class CategoryProductsScreen extends StatefulWidget {
 }
 
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
-  String _sortBy = 'Popular';
-  final List<String> _sortOptions = [
-    'Popular',
-    'Price: Low to High',
-    'Price: High to Low',
-    'Rating',
-  ];
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final products = getProductsByCategory(widget.category.id);
+    final allProducts = getProductsByCategory(widget.category.id);
+    final products = _searchQuery.isEmpty
+        ? allProducts
+        : allProducts
+            .where((p) =>
+                p.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+            .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -39,68 +46,48 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         ),
         title: Text(widget.category.name, style: AppTextStyles.heading3),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // Filter & Sort Bar
+          // Search Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: Colors.white,
-            child: Row(
-              children: [
-                // Sort Dropdown
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _showSortBottomSheet,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.textLight),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.sort,
-                                size: 18,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(_sortBy, style: AppTextStyles.bodyMedium),
-                            ],
-                          ),
-                          const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search in ${widget.category.name}...',
+                hintStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textLight,
                 ),
-                const SizedBox(width: 12),
-                // Filter Button
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.tune, color: Colors.white, size: 20),
+                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              ],
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
             ),
           ),
           // Products Count
@@ -120,18 +107,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          widget.category.icon,
-                          style: const TextStyle(fontSize: 64),
-                        ),
+                        const Icon(Icons.search_off, size: 64, color: AppColors.textLight),
                         const SizedBox(height: 16),
                         Text(
-                          'No products available',
+                          _searchQuery.isNotEmpty
+                              ? 'No results for "$_searchQuery"'
+                              : 'No products available',
                           style: AppTextStyles.heading4,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Check back later for updates',
+                          _searchQuery.isNotEmpty
+                              ? 'Try a different search term'
+                              : 'Check back later for updates',
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -175,59 +163,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showSortBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Sort by', style: AppTextStyles.heading3),
-              const SizedBox(height: 16),
-              ...List.generate(_sortOptions.length, (index) {
-                final option = _sortOptions[index];
-                final isSelected = _sortBy == option;
-                return ListTile(
-                  onTap: () {
-                    setState(() {
-                      _sortBy = option;
-                    });
-                    Navigator.pop(context);
-                  },
-                  leading: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                  title: Text(
-                    option,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
     );
   }
 }

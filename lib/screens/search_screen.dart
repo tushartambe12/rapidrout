@@ -27,18 +27,6 @@ class _SearchScreenState extends State<SearchScreen> {
     'Dairy',
     'Services',
   ];
-  final List<String> _recentSearches = [
-    'Milk',
-    'Tomatoes',
-    'Electrician',
-    'Rice',
-  ];
-  final List<String> _trendingSearches = [
-    'Fresh Fruits',
-    'Plumber',
-    'Organic Vegetables',
-    'AC Repair',
-  ];
 
   void _performSearch(String query) {
     if (query.isEmpty) {
@@ -159,135 +147,23 @@ class _SearchScreenState extends State<SearchScreen> {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 24),
-          // Recent Searches
-          if (_recentSearches.isNotEmpty) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const SizedBox(height: 80),
+          // Empty state
+          Center(
+            child: Column(
               children: [
-                Text('Recent Searches', style: AppTextStyles.heading4),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Clear',
-                    style: TextStyle(color: AppColors.error),
+                const Icon(Icons.search, size: 64, color: AppColors.textLight),
+                const SizedBox(height: 16),
+                Text('Search for products & services', style: AppTextStyles.heading4),
+                const SizedBox(height: 8),
+                Text(
+                  'Find groceries, electricians, plumbers and more',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: _recentSearches.map((search) {
-                return GestureDetector(
-                  onTap: () {
-                    _searchController.text = search;
-                    _performSearch(search);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.textLight),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.history,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(search, style: AppTextStyles.bodyMedium),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-          ],
-          // Trending Searches
-          Text('Trending Searches', style: AppTextStyles.heading4),
-          const SizedBox(height: 12),
-          ...List.generate(_trendingSearches.length, (index) {
-            return ListTile(
-              onTap: () {
-                _searchController.text = _trendingSearches[index];
-                _performSearch(_trendingSearches[index]);
-              },
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                ),
-              ),
-              title: Text(
-                _trendingSearches[index],
-                style: AppTextStyles.bodyLarge,
-              ),
-              trailing: const Icon(
-                Icons.trending_up,
-                color: AppColors.secondary,
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-          // Quick Categories
-          Text('Quick Categories', style: AppTextStyles.heading4),
-          const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 0.9,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: mockCategories.length,
-            itemBuilder: (context, index) {
-              final category = mockCategories[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(category.icon, style: const TextStyle(fontSize: 24)),
-                    const SizedBox(height: 6),
-                    Text(
-                      category.name,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            },
           ),
         ],
       ),

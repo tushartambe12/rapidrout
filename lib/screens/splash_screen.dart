@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/text_styles.dart';
+import '../models/user_state.dart';
 import 'home_screen.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -42,11 +44,14 @@ class _SplashScreenState extends State<SplashScreen>
 
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
+        final destination = userState.isLoggedIn
+            ? const HomeScreen()
+            : const LoginScreen();
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const HomeScreen(),
+                destination,
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   return FadeTransition(opacity: animation, child: child);
